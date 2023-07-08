@@ -9,7 +9,7 @@ pipeline {
         stage('Checkout') {
             steps {
                 echo 'Checking out the repository...'
-                checkout scmGit(branches: [[name: '*/teshla']], extensions: [], userRemoteConfigs: [[credentialsId: 'github_credentials', url: 'https://github.com/sarkar157112/jenkins-pipline.git']])
+                checkout scmGit(branches: [[name: '*/master']], extensions: [], userRemoteConfigs: [[credentialsId: 'github_credentials', url: 'https://github.com/sarkar157112/aks-test-jenkins.git']])
             }
         }
      stage ('K8S Deploy') {
@@ -17,6 +17,7 @@ pipeline {
             script {
                 withKubeConfig(caCertificate: '', clusterName: '', contextName: '', credentialsId: 'aks-config', namespace: '', restrictKubeConfigAccess: false, serverUrl: '') {
                 sh ('pwd')
+                sh ('kubectl apply -f kubemanifest_aks/ ')
                 }
             }
         }
