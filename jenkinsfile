@@ -1,0 +1,25 @@
+pipeline {
+    agent any
+
+    environment {
+        DOCKER_USERNAME = '157112'
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                echo 'Checking out the repository...'
+                checkout scmGit(branches: [[name: '*/teshla']], extensions: [], userRemoteConfigs: [[credentialsId: 'github_credentials', url: 'https://github.com/sarkar157112/jenkins-pipline.git']])
+            }
+        }
+     stage ('K8S Deploy') {
+          steps {
+            script {
+                withKubeConfig(caCertificate: '', clusterName: '', contextName: '', credentialsId: 'aks-config', namespace: '', restrictKubeConfigAccess: false, serverUrl: '') {
+                sh ('pwd')
+                }
+            }
+        }
+      }
+    } 
+}
