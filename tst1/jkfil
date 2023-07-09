@@ -1,0 +1,42 @@
+pipeline {
+    agent any
+    environment {
+        DOCKER_USERNAME = 'mydockerusername'  // replace this with your ACR username
+        DOCKER_PASSWORD = credentials('mydockerpassword')  // replace this with the credentialsId of your ACR password
+        DOCKER_REGISTRY = 'myregistry.azurecr.io' // replace with your ACR registry name
+        DOCKER_IMAGE = 'myapp' // replace with your image name
+        GIT_REPO = 'https://github.com/sarkar157112/aks-test-jenkins.git'
+        IMAGE_TAG = "${env.BUILD_NUMBER}-${new Date().format('ddMMyy')}"
+    }
+    stages {
+        stage('Checkout') {
+            steps {
+                echo 'Checking out the repository...'
+                checkout scmGit(branches: [[name: '*/master']], extensions: [], userRemoteConfigs: [[credentialsId: 'github_credentials', url: GIT_REPO]])
+            }
+        }
+
+        stage('Docker Build and Push') {
+            steps {
+                script {
+                    sh '''
+                        docker build -t $DOCKER_REGISTRY/$DOCKER_IMAGE:$IMAGE_TAG .
+                        docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD $DOCKER_REGISTRY
+                        docker push $DOCKER_REGISTRY/$DOCKER_IMAGE:$IMAGE_TAG
+                    '''
+                }
+            }
+        }
+
+        stage ('K8S Deploy') {
+            steps {
+                script {
+                    withKubeConfig(caCertificate: '', clusterName: '', contextName: '', credentialsId: 'aks-config', namespace: '', restrictKubeConfigAccess: false, serverUrl: '') {
+                        sh ('pwd')
+                        sh ('kubectl set image deployment/myapp-deployment myapp=$DOCKER_REGISTRY/$DOCKER_IMAGE:$IMAGE_TAG -n mynamespace')
+                    }
+                }
+            }
+        }
+    } 
+}
