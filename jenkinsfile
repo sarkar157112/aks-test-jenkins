@@ -1,35 +1,34 @@
 pipeline {
     agent any
     environment {
-        //DOCKER_USERNAME = 'mydockerusername'  // replace this with your ACR username
-        //DOCKER_PASSWORD = credentials('mydockerpassword')  // replace this with the credentialsId of your ACR password
         DOCKER_REGISTRY = 'myacr123test.azurecr.io' // replace with your ACR registry name
         DOCKER_IMAGE = 'myapp' // replace with your image name
-        GIT_REPO = 'https://github.com/sarkar157112/aks-test-jenkins.git'
-        IMAGE_TAG = "${env.BUILD_NUMBER}-${new Date().format('ddMMyy')}"
+        GIT_REPO_URL = 'https://github.com/sarkar157112/aks-test-jenkins.git'
+        IMAGE_TAG = "${env.BUILD_NUMBER}_${new Date().format('ddMMyy')}"
     }
     stages {
         stage('Checkout') {
             steps {
                 echo 'Checking out the repository...'
-                checkout scmGit(branches: [[name: '*/master']], extensions: [], userRemoteConfigs: [[credentialsId: 'github_credentials', url: 'https://github.com/sarkar157112/aks-test-jenkins.git']])
+                checkout scmGit(branches: [[name: '*/master']], extensions: [], userRemoteConfigs: [[credentialsId: 'github_credentials', url: "${GIT_REPO_URL}"]])
             }
         }
         stage('Docker Build and Push') {
             steps {
                 script {
+                    withDockerRegistry(credentialsId: 'aks-acr-creds', url: 'http://myacr123test.azurecr.io') {
                     sh "docker build -t $DOCKER_REGISTRY/$DOCKER_IMAGE:$IMAGE_TAG ."
-                    //sh "docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD $DOCKER_REGISTRY"
                     sh "docker push $DOCKER_REGISTRY/$DOCKER_IMAGE:$IMAGE_TAG"
                 }
             }
         }
-    
+        }
         stage ('K8S Deploy') {
             steps {
                 script {
                     withKubeConfig(caCertificate: '', clusterName: '', contextName: '', credentialsId: 'aks-config', namespace: '', restrictKubeConfigAccess: false, serverUrl: '') {
                     sh ('pwd')
+                    sh "sed -i 's|\${CONTAINER_IMAGE}|'$DOCKER_REGISTRY/$DOCKER_IMAGE:$IMAGE_TAG'|' kubemanifest_aks/deployment.yml"
                     sh ('kubectl apply -f kubemanifest_aks/ ')
                    }
                 }
