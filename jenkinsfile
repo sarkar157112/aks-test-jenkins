@@ -6,7 +6,8 @@ pipeline {
         GIT_REPO_URL = 'https://github.com/sarkar157112/aks-test-jenkins.git'
         IMAGE_TAG = "${env.BUILD_NUMBER}_${new Date().format('ddMMyy')}"
         CONTAINER_IMAGE = 'CONTAINER_IMAGE'
-        DEPLOYMENT_FILE_PATH = 'kubemanifest_aks/01-deployment.yml'
+        KUBEMANIFEST_DIR = 'kubemanifest_aks/'
+        DEPLOYMENT_FILE = '01-deployment.yml'
     }
     stages {
         stage('Checkout') {
@@ -28,10 +29,10 @@ pipeline {
             steps {
                 script {
                     def newImageName = "$DOCKER_REGISTRY/$DOCKER_IMAGE:$IMAGE_TAG"
-                    sh("sed -i 's|${CONTAINER_IMAGE}|${newImageName}|' $DEPLOYMENT_FILE_PATH")
+                    sh("sed -i 's|${CONTAINER_IMAGE}|${newImageName}|' $KUBEMANIFEST_DIR$DEPLOYMENT_FILE")
 
                     withKubeConfig(credentialsId: 'aks-config') {
-                        sh ('kubectl apply -f $DEPLOYMENT_FILE_PATH')
+                        sh ('kubectl apply -f $KUBEMANIFEST_DIR')
                     }
                 }
             }
