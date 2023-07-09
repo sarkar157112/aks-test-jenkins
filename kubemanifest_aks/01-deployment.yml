@@ -33,7 +33,7 @@ metadata:
     app: nginx 
     environment: production
 spec:
-  type: ClusterIP
+  type: LoadBalancer
   selector:
     app: nginx 
     environment: production
