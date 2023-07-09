@@ -7,6 +7,9 @@ ENV NGINX_HOST localhost
 # Copy over the Nginx configuration file
 COPY default.conf /etc/nginx/conf.d/default.conf
 
+# Remove the default Nginx index.html file
+RUN rm /usr/share/nginx/html/index.html
+
 # Copy over static web files
 COPY static-html-directory /usr/share/nginx/html
 
